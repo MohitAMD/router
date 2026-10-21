@@ -95,12 +95,14 @@ pub async fn get_dp_aware_workers(
     let mut dp_aware_workers: Vec<String> = Vec::new();
 
     for url in worker_urls {
-        info!(
-            "Expanding worker {} to {} DP-aware URLs (ranks 0..{})",
-            url,
-            dp_size,
-            dp_size.saturating_sub(1)
-        );
+        if dp_size > 1 {
+            info!(
+                "Expanding worker {} to {} DP-aware URLs (ranks 0..{})",
+                url,
+                dp_size,
+                dp_size - 1
+            );
+        }
 
         // Expand each worker URL to multiple DP-aware URLs via the shared helper.
         dp_aware_workers.extend(expand_dp_aware_url(url, dp_size));
@@ -303,11 +305,13 @@ mod tests {
     }
 
     #[test]
-    fn test_expand_dp_aware_url_noop_when_dp_size_is_1() {
-        assert_eq!(
-            expand_dp_aware_url("http://10.0.0.1:20005", 1),
-            vec!["http://10.0.0.1:20005".to_string()]
-        );
+    fn test_expand_dp_aware_url_noop_when_dp_size_le_1() {
+        for dp_size in [0, 1] {
+            assert_eq!(
+                expand_dp_aware_url("http://10.0.0.1:20005", dp_size),
+                vec!["http://10.0.0.1:20005".to_string()]
+            );
+        }
     }
 
     #[test]
